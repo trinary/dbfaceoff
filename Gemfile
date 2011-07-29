@@ -8,5 +8,7 @@ gem 'ruby-tokyotyrant'
 
 gem 'kyototycoon'
 
+gem 'redis'
+
 gem 'gsl'
 gem 'uuidtools'

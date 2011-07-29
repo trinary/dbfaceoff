@@ -10,13 +10,15 @@ require 'bundler/setup' if File.exists?(ENV['BUNDLE_GEMFILE'])
 require 'mongo'
 require 'tokyo_tyrant'
 #require 'kyototycoon'
+require 'redis'
 require 'uuidtools'
 require 'gsl'
 require 'benchmark'
 
-#METRIC_COUNT = 100
-METRIC_COUNT = 2
-OBSERVATION_DAY_COUNT = 365
+#METRIC_COUNT = 2
+METRIC_COUNT = 1000000
+#OBSERVATION_DAY_COUNT = 365
+OBSERVATION_DAY_COUNT = 1
 SAMPLES_PER_DAY = 720
 
 class MongoObservation
@@ -79,6 +81,34 @@ class TokyoObservation
   end
 end
 
+class RedisObservation
+  def self.add(metric_uuid, time, value)
+    data = [time.to_i, value]
+
+    connection.rpush(key(metric_uuid, time), data)
+  end
+
+  def self.read(metric_uuid, time)
+    connection.lrange(key(metric_uuid, time), 0, -1)
+  end
+
+  def self.delete(metric_uuid, time)
+    connection.del(key(metric_uuid, time))
+  end
+
+  def self.clear
+    connection.flushdb
+  end
+
+  def self.key(metric_uuid, time)
+    key = "#{metric_uuid}_#{time.utc.strftime('%Y%m%d')}"
+  end
+
+  def self.connection
+    @@connection ||= Redis.new
+  end
+end
+
 #class KyotoObservation
   #def self.add(metric_uuid, time, value)
     #key = "#{metric_uuid}_#{time.utc.strftime('%Y%m%d')}"
@@ -111,6 +141,7 @@ step_size = (1 * 24 * 60 * 60) / SAMPLES_PER_DAY
 
 MongoObservation.clear
 TokyoObservation.clear
+RedisObservation.clear
 
 Benchmark.bm(15) do |x|
   x.report('mongo add') do
@@ -143,6 +174,21 @@ Benchmark.bm(15) do |x|
     end
   end
 
+  x.report('redis add') do
+    metrics.each do |metric|
+      i = 0
+
+      (start_at..end_at).step(step_size) do |timestamp|
+        time = Time.at(timestamp)
+        value = values[i]
+
+        RedisObservation.add(metric, time, value)
+
+        i += 1
+      end
+    end
+  end
+
   x.report('mongo read') do
     metrics.each do |metric|
       (start_at..end_at).step(86400) do |timestamp|
@@ -163,6 +209,16 @@ Benchmark.bm(15) do |x|
     end
   end
 
+  x.report('redis read') do
+    metrics.each do |metric|
+      (start_at..end_at).step(86400) do |timestamp|
+        time = Time.at(timestamp)
+
+        RedisObservation.read(metric, time)
+      end
+    end
+  end
+
   x.report('mongo delete') do
     metrics.each do |metric|
       (start_at..end_at).step(86400) do |timestamp|
@@ -179,6 +235,16 @@ Benchmark.bm(15) do |x|
         time = Time.at(timestamp)
 
         TokyoObservation.delete(metric, time)
+      end
+    end
+  end
+
+  x.report('redis delete') do
+    metrics.each do |metric|
+      (start_at..end_at).step(86400) do |timestamp|
+        time = Time.at(timestamp)
+
+        RedisObservation.delete(metric, time)
       end
     end
   end
