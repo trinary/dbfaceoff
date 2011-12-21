@@ -6,9 +6,9 @@ gem 'SystemTimer'
 
 gem 'ruby-tokyotyrant'
 
-gem 'kyototycoon'
-
 gem 'redis'
+
+gem 'cassandra'
 
 gem 'gsl'
 gem 'uuidtools'
