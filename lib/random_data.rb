@@ -5,7 +5,7 @@ class RandomData
   attr_accessor :metrics, :values, :start_at, :end_at, :step_size
 
   def initialize(options = {})
-    options = { :metric_count => 1, :day_count => 1, :samples_per_day => 720 }.merge(options)
+    options = { :metric_count => 1, :day_count => 1, :samples_per_day => 720 }.merge(options.to_hash)
 
     print "Generating random data for #{options[:metric_count]} metrics over #{options[:day_count]} days sampled #{options[:samples_per_day]} times per day..."
     STDOUT.flush
