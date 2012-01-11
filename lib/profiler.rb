@@ -27,19 +27,28 @@ class Profiler
     puts ""
     puts "  #{title}:"
 
+    # reset iostat
+    `iostat -dI 2>&1 > /dev/null`
+
     start_time = Time.now
     result = yield
     end_time = Time.now
     elapsed_time = end_time.to_f - start_time.to_f
 
     puts "    #{'%.3f' % elapsed_time} seconds (#{'%.3f' % (result / elapsed_time)} requests/second)"
-    #puts ""
-    #puts `iostat -dI`
-    #puts ""
+    puts ""
+    puts `iostat -dI`
+    puts ""
   end
 
   def report_file_size(file_pattern)
-    total = Dir[file_pattern].inject(0) { |sum, filename| sum += File.size(filename) }
+    file_patterns = [file_pattern].flatten
+    total = 0
+
+    file_patterns.each do |file_pattern|
+      total += Dir[file_pattern].inject(0) { |sum, filename| sum += File.size(filename) }
+    end
+
     puts "    Size on disk: #{total} bytes"
   end
 
