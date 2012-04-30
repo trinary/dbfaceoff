@@ -59,7 +59,8 @@ class Profiler
       @data.metrics.each do |metric|
         i = 0
 
-        (@data.start_at..@data.end_at).step(@data.step_size) do |timestamp|
+        timestamp = @data.start_at
+        while timestamp < @data.end_at
           time = Time.at(timestamp)
           value = @data.values[i]
 
@@ -67,6 +68,7 @@ class Profiler
             store.add(metric, time, value)
             i += 1
           end
+          timestamp += @data.step_size
         end
 
         count += i
@@ -84,7 +86,8 @@ class Profiler
       count = 0
 
       @data.metrics.each do |metric|
-        (@data.start_at..@data.end_at).step(86400) do |timestamp|
+        timestamp = @data.start_at
+        while timestamp < @data.end_at do
           time = Time.at(timestamp)
           output = store.read(metric, time)
           if !output.nil? && !output.empty?
@@ -93,6 +96,7 @@ class Profiler
             #puts ""
             count += output.count
           end
+          timestamp += 86400
         end
       end
 
@@ -106,10 +110,12 @@ class Profiler
       count = 0
 
       @data.metrics.each do |metric|
-        (@data.start_at..@data.end_at).step(86400) do |timestamp|
+        timestamp = @data.start_at
+        while timestamp < @data.end_at do
           time = Time.at(timestamp)
           store.delete(metric, time)
           count += 1
+          timestamp += 86400
         end
       end
 
