@@ -3,11 +3,11 @@ require 'mongo'
 class MongoObservation
   def add(metric_uuid, time, value)
     data = [time.to_i, value]
-    collection.update({'_id' => key(metric_uuid, time), 'date' => format_date(time)}, {'$push' => {'values' => data}}, :upsert => true)
+    collection.update({'_id' => key(metric_uuid, time), 'metric_uuid' => metric_uuid, 'date' => format_date(time)}, {'$push' => {'values' => data}}, :upsert => true)
   end
 
   def read(metric_uuid, time)
-    values = collection.find('_id' => key(metric_uuid, time), 'date' => format_date(time)).to_a.first
+    values = collection.find('_id' => key(metric_uuid, time), 'metric_uuid' => metric_uuid, 'date' => format_date(time)).to_a.first
     values = values['values'] if values
     values
   end
